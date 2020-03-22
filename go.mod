@@ -1,3 +1,3 @@
-module github.com/gejunqiang/npc-go
+module github.com/gejunqiang/npc
 
 go 1.13
