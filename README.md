@@ -14,7 +14,7 @@ CGO_ENABLED=0 GOOS=linux go build -o bin/npc -mod=vendor -ldflags '-s -w' ./cmd/
 ```bash
 NPC_API_KEY=<key> NPC_API_SECRET=<secret> npc GET '/keypair?Action=ListKeyPair&Version=2018-02-08&Limit=9999&Offset=0'
 
-NPC_API_KEY=<key> NPC_API_SECRET=<secret> npc POST '/keypair?Action=ListKeyPair&Version=2018-02-08&Limit=9999&Offset=0' '{"KeyContent":"ssh-rsa xxxxxxxxxx", "KeyName": "test"}'
+NPC_API_KEY=<key> NPC_API_SECRET=<secret> npc POST '/keypair?Action=UploadKeyPair&Version=2018-02-08&Limit=9999&Offset=0' '{"KeyContent":"ssh-rsa xxxxxxxxxx", "KeyName": "test"}'
 ```
 
 ## Usage with config file

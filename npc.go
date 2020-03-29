@@ -15,24 +15,50 @@ import (
 	"time"
 )
 
-const EmptyString = ""
+const (
+	EmptyString = ""
+
+	DefaultApiEndpoint = "open.c.163.com"
+	DefaultApiRegion   = "cn-east-1"
+)
 
 type Npc struct {
 	Endpoint  string
 	AccessKey string
 	SecretKey string
 	Region    string
+	Verbose   bool
+}
+
+func DefaultNpc(accessKey string, secretKey string) *Npc {
+	if accessKey == EmptyString || secretKey == EmptyString {
+		log.Fatal("accessKey & secretKey can't be empty")
+	}
+	return &Npc{Endpoint: DefaultApiEndpoint, AccessKey: accessKey, SecretKey: secretKey, Region: DefaultApiRegion}
 }
 
 func NewNpc(endpoint string, accessKey string, secretKey string, region string) *Npc {
-	if accessKey == EmptyString || secretKey == EmptyString {
-		log.Fatal("api_key & api_secret can't be empty!")
+	if accessKey == EmptyString {
+		log.Fatal("accessKey can't be empty!")
+	}
+	if secretKey == EmptyString {
+		log.Fatal("secretKey can't be empty!")
+	}
+	if endpoint == EmptyString {
+		log.Fatal("endpoint can't be empty!")
+	}
+	if region == EmptyString {
+		log.Fatal("region can't be empty!")
 	}
 	return &Npc{Endpoint: endpoint, AccessKey: accessKey, SecretKey: secretKey, Region: region}
 }
 
+func (npc *Npc) setVerbose(verbose bool) {
+	npc.Verbose = verbose
+}
+
 func (npc *Npc) getUrlQueryString(params map[string]string, orderedKeys []string) string {
-	if params == nil{
+	if params == nil {
 		return EmptyString
 	}
 	v := url.Values{}
@@ -44,7 +70,7 @@ func (npc *Npc) getUrlQueryString(params map[string]string, orderedKeys []string
 	default:
 		for _, key := range orderedKeys {
 			if value, ok := params[key]; ok {
-				v.Add(key,value)
+				v.Add(key, value)
 			}
 		}
 	}
@@ -55,7 +81,7 @@ func (npc *Npc) getTimestamp() string {
 	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
 }
 
-func (npc *Npc) getUUID(length int) string{
+func (npc *Npc) getUUID(length int) string {
 	if length <= 0 {
 		length = 10
 	}
@@ -108,16 +134,18 @@ func (npc *Npc) getSignature(string2Sign, secretKey string) string {
 // example:
 // service = /keypair
 // params = {Action: ListKeyPair, Version: 2018-02-08}
-func (npc *Npc) Get(service string, params map[string]string)(*http.Response, error) {
+func (npc *Npc) Get(service string, params map[string]string) (*http.Response, error) {
 	method := http.MethodGet
 	canonicalizedQueryString := npc.getCanonicalizedQueryString(params)
 	string2sign := npc.getString2Sign(method, npc.Endpoint, service, canonicalizedQueryString, npc.getHashPayload(EmptyString))
 	signature := npc.getSignature(string2sign, npc.SecretKey)
-	signatureParams := map[string]string {
+	signatureParams := map[string]string{
 		"Signature": signature,
 	}
 	httpUrl := "https://" + npc.Endpoint + service + "?" + canonicalizedQueryString + "&" + npc.getUrlQueryString(signatureParams, nil)
-	fmt.Println(httpUrl)
+	if npc.Verbose {
+		fmt.Println(httpUrl)
+	}
 	client := &http.Client{}
 	req, err := http.NewRequest(method, httpUrl, nil)
 	if err != nil {
@@ -130,16 +158,18 @@ func (npc *Npc) Get(service string, params map[string]string)(*http.Response, er
 // service = /keypair
 // Action = {Action: UploadKeyPair, Version: 2018-02-08}
 // body = jsonFormat string
-func (npc *Npc) Post(service string, params map[string]string, body string)(*http.Response, error) {
+func (npc *Npc) Post(service string, params map[string]string, body string) (*http.Response, error) {
 	method := http.MethodPost
 	canonicalizedQueryString := npc.getCanonicalizedQueryString(params)
 	string2sign := npc.getString2Sign(method, npc.Endpoint, service, canonicalizedQueryString, npc.getHashPayload(body))
 	signature := npc.getSignature(string2sign, npc.SecretKey)
-	signatureParams := map[string]string {
+	signatureParams := map[string]string{
 		"Signature": signature,
 	}
 	httpUrl := "https://" + npc.Endpoint + service + "?" + canonicalizedQueryString + "&" + npc.getUrlQueryString(signatureParams, nil)
-	fmt.Println(httpUrl)
+	if npc.Verbose {
+		fmt.Println(httpUrl)
+	}
 	client := &http.Client{}
 	req, err := http.NewRequest(method, httpUrl, strings.NewReader(body))
 	if err != nil {
